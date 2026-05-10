@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseDonation } from '@/lib/nlp-parser';
 import { supabaseAdmin } from '@/lib/supabase';
+import { Locale } from '@/lib/i18n';
 
 export async function POST(req: NextRequest) {
   try {
-    const { text } = await req.json();
-    const items = await parseDonation(text);
+    const { text, locale = 'en' } = await req.json();
+    const items = await parseDonation(text, locale as Locale);
     return NextResponse.json({ items });
   } catch (error: any) {
     console.error('Parse error:', error);

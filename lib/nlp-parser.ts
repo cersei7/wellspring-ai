@@ -1,19 +1,26 @@
 import { askClaude } from './claude';
 import { ParsedDonationItem } from './types';
+import { Locale, LOCALE_INSTRUCTION } from './i18n';
 
-const PARSE_SYSTEM = `你是捐赠物资解析助手。
-将自然语言描述转换为 JSON 数组，每项包含:
-- category: "food" | "clothing" | "hygiene" | "baby" | "household" | "other"
-- name: 物资名称
-- quantity: 数量 (整数)
-- unit: 单位 (如 "boxes", "items", "lbs")
-- attributes: 额外属性对象 (如尺码、年龄段)
+function getParseSystem(locale: Locale): string {
+  return `${LOCALE_INSTRUCTION[locale]}
 
-仅输出 JSON，不要任何解释。`;
+You are a donation intake assistant AND a translator.
+When the user describes items in any language (Chinese, Spanish, etc.), you MUST translate the item name and unit into **English**.
+The output JSON must contain:
+- category: one of "food", "clothing", "hygiene", "baby", "household", "other"
+- name: the item name **translated to English** (e.g., "奶粉" → "baby formula", "冬衣" → "winter coat")
+- quantity: integer
+- unit: the unit **translated to English** (e.g., "箱" → "boxes", "罐" → "cans")
+- attributes: any extra properties
 
-export async function parseDonation(text: string): Promise<ParsedDonationItem[]> {
+CRITICAL: The "name" and "unit" fields MUST be in English after translation. Do NOT output the original language.
+Output only a valid JSON array. No extra text.`;
+}
+
+export async function parseDonation(text: string, locale: Locale = 'en'): Promise<ParsedDonationItem[]> {
   try {
-    const response = await askClaude(text, PARSE_SYSTEM, 1024);
+    const response = await askClaude(text, getParseSystem(locale), 1024);
     const cleaned = response.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (e) {

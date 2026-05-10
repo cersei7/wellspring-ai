@@ -1,24 +1,30 @@
 import { askClaude } from './claude';
+import { Locale, LOCALE_INSTRUCTION } from './i18n';
 
-export async function generateReport(stats: {
-  period: string;
-  totalDonations: number;
-  totalDistributed: number;
-  topCategories: Array<{ name: string; count: number }>;
-  beneficiariesServed: number;
-  shortages: string[];
-}) {
-  const prompt = `你是 WellSpring 妇女中心的报告撰写助手。
-基于以下数据，写一份 250 字左右的中文专业报告，自然流畅，包含数据洞察。
+export async function generateReport(
+  stats: {
+    period: string;
+    totalDonations: number;
+    totalDistributed: number;
+    topCategories: Array<{ name: string; count: number }>;
+    beneficiariesServed: number;
+    shortages: string[];
+  },
+  locale: Locale = 'en'
+) {
+  const prompt = `${LOCALE_INSTRUCTION[locale]}
 
-时间段: ${stats.period}
-接收捐赠: ${stats.totalDonations} 件
-已分发: ${stats.totalDistributed} 件
-受益家庭/个人: ${stats.beneficiariesServed}
-热门类别: ${stats.topCategories.map(c => `${c.name}(${c.count})`).join(', ')}
-短缺预警: ${stats.shortages.join(', ') || '无'}
+You are a report writer for WellSpring Women's Center.
+Based on the data below, write a ~250-word professional report with natural flow and data insights.
 
-格式：第一段总览，第二段分配亮点，第三段建议。`;
+Period: ${stats.period}
+Donations received: ${stats.totalDonations}
+Distributed: ${stats.totalDistributed}
+Beneficiaries served: ${stats.beneficiariesServed}
+Top categories: ${stats.topCategories.map(c => `${c.name}(${c.count})`).join(', ')}
+Shortage alerts: ${stats.shortages.join(', ') || 'none'}
+
+Format: paragraph 1 = overview, paragraph 2 = distribution highlights, paragraph 3 = recommendations.`;
 
   return askClaude(prompt, undefined, 800);
 }

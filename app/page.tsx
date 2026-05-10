@@ -4,15 +4,21 @@ import DistributionPanel from '@/components/DistributionPanel';
 import ReportViewer from '@/components/ReportViewer';
 import InventoryGrid from '@/components/InventoryGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function Dashboard() {
   return (
     <main className="container mx-auto p-6 max-w-7xl">
-      <header className="mb-8">
-        <h1 className="text-3xl font-semibold">WellSpring AI</h1>
-        <p className="text-muted-foreground">
-          Smart donation management for women's centers
-        </p>
+      <header className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold">WellSpring AI</h1>
+          <p className="text-muted-foreground">
+            Smart donation management for women's centers
+          </p>
+        </div>
+        <div className="mt-1 bg-emerald-600 rounded-full px-1 py-1">
+          <LanguageSwitcher />
+        </div>
       </header>
 
       <Tabs defaultValue="intake">

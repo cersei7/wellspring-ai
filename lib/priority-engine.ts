@@ -1,5 +1,6 @@
 import { askClaude } from './claude';
 import { Beneficiary, FamilyRelation, AllocationUnit, ScoreBreakdown, Recommendation } from './types';
+import { Locale, LOCALE_INSTRUCTION } from './i18n';
 
 export function buildAllocationUnits(
   beneficiaries: Beneficiary[],
@@ -78,14 +79,23 @@ export async function explainRecommendation(
   unit: AllocationUnit,
   donation: any,
   score: ScoreBreakdown,
-  rank: number
+  rank: number,
+  locale: Locale = 'en'
 ): Promise<string> {
-  const prompt = `你是有经验的物资分配协调员。用 1-2 句中文解释为何这个分配单位排名第 ${rank}。
-保持简洁、专业、富有同理心。不要使用真名，仅用单位 ID。
+  const prompt = `${LOCALE_INSTRUCTION[locale]}
 
-分配单位: ${unit.id} (${unit.type === 'family' ? `家庭单位 ${unit.memberIds.length} 人` : '个人'})
-物资: ${donation.name} (${donation.category})
-得分: 需求匹配 ${(score.needMatch*100).toFixed(0)}% | 等待 ${(score.waitTime*100).toFixed(0)}% | 紧急 ${(score.urgency*100).toFixed(0)}% | 脆弱性 ${(score.vulnerability*100).toFixed(0)}%`;
+You are an experienced distribution coordinator for a women's center.
+Explain in 1-2 sentences why this allocation unit is ranked #${rank}.
+Keep it concise, professional, and empathetic. Do not use real names, only the unit ID.
+
+Allocation unit: ${unit.id} (${unit.type === 'family' ? `family unit of ${unit.memberIds.length} people` : 'individual'})
+Item: ${donation.name} (${donation.category})
+Score breakdown:
+- Need match: ${(score.needMatch * 100).toFixed(0)}%
+- Wait time: ${(score.waitTime * 100).toFixed(0)}%
+- Urgency: ${(score.urgency * 100).toFixed(0)}%
+- Vulnerability: ${(score.vulnerability * 100).toFixed(0)}%
+Total score: ${(score.total * 100).toFixed(0)}%`;
 
   return askClaude(prompt, undefined, 300);
 }
@@ -95,7 +105,8 @@ export async function recommendDistribution(
   relations: FamilyRelation[],
   donation: any,
   inventoryQty: number,
-  totalDemand: number
+  totalDemand: number,
+  locale: Locale = 'en'
 ): Promise<{ scarcityMode: boolean; recommendations: Recommendation[] }> {
   const scarcityMode = inventoryQty < totalDemand * 1.5;
   const units = buildAllocationUnits(beneficiaries, relations, scarcityMode);
@@ -106,7 +117,7 @@ export async function recommendDistribution(
       rank: i + 1,
       unit: s.unit,
       score: s.score,
-      explanation: await explainRecommendation(s.unit, donation, s.score, i + 1),
+      explanation: await explainRecommendation(s.unit, donation, s.score, i + 1, locale),
     }))
   );
   return { scarcityMode, recommendations };
