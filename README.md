@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WellSpring AI
 
-## Getting Started
+Smart donation management for women's centers — powered by Claude.
 
-First, run the development server:
+Built for **HackDavis 2026**, targeting:
+- Best Hack for Women's Center
+- Best AI/ML Hack (sponsored by Anthropic)
 
-```bash
+## What it does
+
+**Natural-language intake** — Volunteers type "got 3 boxes of canned food, 2 winter coats, 10 cans baby formula" and Claude parses it into structured inventory in under a second.
+
+**Family-aware AI recommendations** — When supplies are scarce, the system automatically merges related beneficiaries into shared allocation units via Union-Find on the family relationship graph. Claude generates a one-sentence explanation for each ranking.
+
+**Live inventory dashboard** — Real-time stock by category, computed from received donations minus distributions.
+
+**AI-generated reports** — One click and Claude writes a stakeholder-ready report on the past 7 days.
+
+## The priority engine
+
+Score = 0.40 * NeedMatch + 0.25 * WaitTime + 0.20 * Urgency + 0.15 * Vulnerability
+
+When stock falls below 1.5x total demand, scarcity mode activates and family members merge into shared allocation units. Otherwise each beneficiary is independent.
+
+## Privacy by design
+
+- Real names become anonymized IDs (BNF-A3F2) and never reach the AI
+- Family relationships stored in a separate table
+- Postgres Row-Level Security at the database layer
+- All writes go through API routes with a service-role key; the browser never has direct write access
+
+## Built with
+
+Next.js 14, TypeScript, Tailwind CSS, shadcn/ui, Supabase (Postgres + RLS), Anthropic Claude API (claude-sonnet-4-6), Vercel.
+
+## Run locally
+
+git clone https://github.com/YOUR_USERNAME/wellspring-ai.git
+cd wellspring-ai
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Required env vars:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+ANTHROPIC_API_KEY
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Set up the database by running database/schema.sql in your Supabase SQL Editor.
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
