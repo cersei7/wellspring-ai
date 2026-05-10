@@ -5,81 +5,42 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const DIST_UI = {
-  en: {
-    title: 'AI Distribution Recommendations',
-    subtitle: 'Select a donation. Claude analyzes beneficiary needs, family relationships, and urgency to suggest a fair allocation order.',
-    donationLabel: 'Donation:',
-    choosePlaceholder: '-- Choose --',
-    analyzeBtn: 'Get AI Recommendations',
-    analyzing: 'Claude is analyzing...',
-    scarcityTitle: '⚠ Scarcity Mode',
-    scarcityDesc: 'Supply is limited. Family members merged into shared allocation units.',
-    abundantTitle: '✓ Abundant Mode',
-    abundantDesc: 'Supply is sufficient. Each beneficiary treated as an individual unit.',
-    priorityTitle: 'Priority Ranking:',
-    familyUnit: 'Family unit',
-    individual: 'Individual',
-    scoreNeed: 'Need', scoreWait: 'Wait', scoreUrgency: 'Urgency',
-    scoreVuln: 'Vulnerability', scoreTotal: 'Total',
-  },
-  zh: {
-    title: 'AI 分配建议',
-    subtitle: '选择一批捐赠物资，Claude 将分析受益人需求、家庭关系和紧急程度，提出公平的分配顺序。',
-    donationLabel: '捐赠物资：',
-    choosePlaceholder: '-- 请选择 --',
-    analyzeBtn: '获取 AI 建议',
-    analyzing: 'Claude 分析中...',
-    scarcityTitle: '⚠ 稀缺模式',
-    scarcityDesc: '物资有限，家庭成员已合并为共同分配单位。',
-    abundantTitle: '✓ 充足模式',
-    abundantDesc: '物资充足，每位受益人作为独立单位处理。',
-    priorityTitle: '优先级排名：',
-    familyUnit: '家庭单位',
-    individual: '个人',
-    scoreNeed: '需求', scoreWait: '等待', scoreUrgency: '紧急',
-    scoreVuln: '脆弱性', scoreTotal: '总分',
-  },
-  es: {
-    title: 'Recomendaciones de Distribución IA',
-    subtitle: 'Selecciona una donación. Claude analiza las necesidades de los beneficiarios, relaciones familiares y urgencia para sugerir un orden de asignación justo.',
-    donationLabel: 'Donación:',
-    choosePlaceholder: '-- Elegir --',
-    analyzeBtn: 'Obtener Recomendaciones IA',
-    analyzing: 'Claude está analizando...',
-    scarcityTitle: '⚠ Modo Escasez',
-    scarcityDesc: 'El suministro es limitado. Los miembros de la familia se combinaron en unidades de asignación compartidas.',
-    abundantTitle: '✓ Modo Abundante',
-    abundantDesc: 'El suministro es suficiente. Cada beneficiario es tratado como una unidad individual.',
-    priorityTitle: 'Ranking de Prioridad:',
-    familyUnit: 'Unidad familiar',
-    individual: 'Individual',
-    scoreNeed: 'Necesidad', scoreWait: 'Espera', scoreUrgency: 'Urgencia',
-    scoreVuln: 'Vulnerabilidad', scoreTotal: 'Total',
-  },
+const T = {
+  en: { title: 'AI Distribution Recommendations', subtitle: 'Select a donation...', donationLabel: 'Donation:', choose: '-- Choose --', analyzeBtn: 'Get AI Recommendations', analyzing: 'Claude is analyzing...', scarcityTitle: '⚠ Scarcity Mode', scarcityDesc: 'Supply limited.', abundantTitle: '✓ Abundant Mode', abundantDesc: 'Supply sufficient.', priorityTitle: 'Priority Ranking:', familyUnit: 'Family unit', individual: 'Individual', need: 'Need', wait: 'Wait', urgency: 'Urgency', vuln: 'Vulnerability', total: 'Total', allocateBtn: 'Allocate', allocatedMsg: 'Allocated successfully!' },
+  zh: { title: 'AI 分配建议', subtitle: '选择捐赠...', donationLabel: '捐赠物资：', choose: '-- 请选择 --', analyzeBtn: '获取 AI 建议', analyzing: 'Claude 分析中...', scarcityTitle: '⚠ 稀缺模式', scarcityDesc: '物资有限', abundantTitle: '✓ 充足模式', abundantDesc: '物资充足', priorityTitle: '优先级排名：', familyUnit: '家庭单位', individual: '个人', need: '需求', wait: '等待', urgency: '紧急', vuln: '脆弱性', total: '总分', allocateBtn: '分配', allocatedMsg: '分配成功！' },
+  es: { title: 'Recomendaciones IA', subtitle: 'Selecciona una donación...', donationLabel: 'Donación:', choose: '-- Elegir --', analyzeBtn: 'Recomendar', analyzing: 'Analizando...', scarcityTitle: '⚠ Escasez', scarcityDesc: 'Familias combinadas', abundantTitle: '✓ Abundante', abundantDesc: 'Suficiente', priorityTitle: 'Prioridad:', familyUnit: 'Unidad familiar', individual: 'Individual', need: 'Necesidad', wait: 'Espera', urgency: 'Urgencia', vuln: 'Vulnerabilidad', total: 'Total', allocateBtn: 'Asignar', allocatedMsg: 'Asignado exitosamente!' },
 };
 
 export default function DistributionPanel() {
   const { locale } = useLanguage();
-  const t = DIST_UI[locale];
+  const t = T[locale as keyof typeof T] || T.en;
   const [donations, setDonations] = useState<any[]>([]);
-  const [selectedId, setSelectedId] = useState<string>('');
+  const [selectedId, setSelectedId] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [allocating, setAllocating] = useState(false);
+  const [allocMessage, setAllocMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/donations')
-      .then((r) => r.json())
-      .then((d) => setDonations(d.donations || []))
-      .catch((e) => setError(e.message));
+    fetchDonations();
   }, []);
+
+  async function fetchDonations() {
+    try {
+      const res = await fetch('/api/donations');
+      const data = await res.json();
+      setDonations(data.donations || []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
 
   async function handleRecommend() {
     if (!selectedId) return;
     setLoading(true);
-    setResult(null);
     setError(null);
+    setAllocMessage(null);
     try {
       const res = await fetch('/api/distribute', {
         method: 'POST',
@@ -96,11 +57,43 @@ export default function DistributionPanel() {
     }
   }
 
+  async function handleAllocate(beneficiaryId?: string) {
+    if (!selectedId) {
+      setAllocMessage('Please select a donation first');
+      return;
+    }
+    // 获取当前选中捐赠的数量（从 donations 列表中找到对应项）
+    const donation = donations.find(d => d.id === selectedId);
+    if (!donation) {
+      setAllocMessage('Donation not found');
+      return;
+    }
+    const quantityToAllocate = 1; // 或者分配全部：donation.quantity
+    setAllocating(true);
+    try {
+      const res = await fetch('/api/allocate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ donationId: selectedId, quantity: quantityToAllocate, beneficiaryId }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setAllocMessage(`${t.allocatedMsg} Remaining: ${data.remaining}`);
+      // 刷新捐赠列表和推荐结果（可选）
+      await fetchDonations();
+      if (selectedId) handleRecommend(); // 重新获取推荐，反映库存变化
+    } catch (err: any) {
+      setAllocMessage(err.message);
+    } finally {
+      setAllocating(false);
+      setTimeout(() => setAllocMessage(null), 3000);
+    }
+  }
+
   return (
     <Card className="p-6">
       <h2 className="text-xl font-medium mb-2">{t.title}</h2>
       <p className="text-sm text-muted-foreground mb-4">{t.subtitle}</p>
-
       <div className="mb-4">
         <label className="block text-sm font-medium mb-2">{t.donationLabel}</label>
         <select
@@ -108,7 +101,7 @@ export default function DistributionPanel() {
           onChange={(e) => setSelectedId(e.target.value)}
           className="w-full p-2 border rounded"
         >
-          <option value="">{t.choosePlaceholder}</option>
+          <option value="">{t.choose}</option>
           {donations.map((d) => (
             <option key={d.id} value={d.id}>
               {d.name} ({d.quantity} {d.unit}) — {d.category}
@@ -116,59 +109,49 @@ export default function DistributionPanel() {
           ))}
         </select>
       </div>
-
       <Button onClick={handleRecommend} disabled={!selectedId || loading}>
         {loading ? t.analyzing : t.analyzeBtn}
       </Button>
 
-      {error && (
-        <div className="mt-4 p-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm">
-          ✗ {error}
-        </div>
-      )}
+      {error && <div className="mt-4 p-3 bg-red-50 text-red-800 rounded">✗ {error}</div>}
+      {allocMessage && <div className="mt-4 p-3 bg-blue-50 text-blue-800 rounded">{allocMessage}</div>}
 
       {result && (
         <div className="mt-6 space-y-4">
-          <div className={`p-3 rounded border ${
-            result.scarcityMode
-              ? 'bg-amber-50 border-amber-200 text-amber-900'
-              : 'bg-green-50 border-green-200 text-green-900'
-          }`}>
-            <p className="text-sm font-medium">
-              {result.scarcityMode ? t.scarcityTitle : t.abundantTitle}
-            </p>
-            <p className="text-xs mt-1">
-              {result.scarcityMode ? t.scarcityDesc : t.abundantDesc}
-            </p>
+          <div className={`p-3 rounded border ${result.scarcityMode ? 'bg-amber-50' : 'bg-green-50'}`}>
+            <p className="text-sm font-medium">{result.scarcityMode ? t.scarcityTitle : t.abundantTitle}</p>
+            <p className="text-xs mt-1">{result.scarcityMode ? t.scarcityDesc : t.abundantDesc}</p>
           </div>
-
           <div className="space-y-3">
             <h3 className="font-medium">{t.priorityTitle}</h3>
             {result.recommendations.map((rec: any) => (
-              <div key={rec.unit.id} className="p-4 border rounded-lg bg-white">
+              <div key={rec.rank} className="p-4 border rounded-lg bg-white">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center text-sm font-medium">
-                    {rec.rank}
-                  </div>
+                  <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center text-sm font-medium">{rec.rank}</div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-medium">
-                        {rec.unit.type === 'family' ? t.familyUnit : t.individual}
-                      </span>
+                      <span className="font-medium">{rec.unit.type === 'family' ? t.familyUnit : t.individual}</span>
                       <Badge variant={rec.unit.type === 'family' ? 'default' : 'secondary'}>
                         {rec.unit.members.map((m: any) => m.anonymous_id).join(' + ')}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground italic mb-2">"{rec.explanation}"</p>
                     <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
-                      <span>{t.scoreNeed}: {(rec.score.needMatch * 100).toFixed(0)}%</span>
-                      <span>{t.scoreWait}: {(rec.score.waitTime * 100).toFixed(0)}%</span>
-                      <span>{t.scoreUrgency}: {(rec.score.urgency * 100).toFixed(0)}%</span>
-                      <span>{t.scoreVuln}: {(rec.score.vulnerability * 100).toFixed(0)}%</span>
-                      <span className="font-medium text-black">
-                        {t.scoreTotal}: {(rec.score.total * 100).toFixed(0)}%
-                      </span>
+                      <span>{t.need}: {(rec.score.needMatch*100).toFixed(0)}%</span>
+                      <span>{t.wait}: {(rec.score.waitTime*100).toFixed(0)}%</span>
+                      <span>{t.urgency}: {(rec.score.urgency*100).toFixed(0)}%</span>
+                      <span>{t.vuln}: {(rec.score.vulnerability*100).toFixed(0)}%</span>
+                      <span className="font-medium text-black">{t.total}: {(rec.score.total*100).toFixed(0)}%</span>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                      onClick={() => handleAllocate(rec.unit.members[0]?.id)}
+                      disabled={allocating}
+                    >
+                      {allocating ? '...' : t.allocateBtn}
+                    </Button>
                   </div>
                 </div>
               </div>

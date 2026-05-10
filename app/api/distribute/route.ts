@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recommendDistribution } from '@/lib/priority-engine';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,22 +9,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing donationId' }, { status: 400 });
     }
 
-    const { data: beneficiaries, error: benError } = await supabase
+    const { data: donation, error: donError } = await supabaseAdmin
+      .from('donations')
+      .select('*')
+      .eq('id', donationId)
+      .maybeSingle();
+
+    if (donError) {
+      console.error('Donation query error:', donError);
+      return NextResponse.json({ error: donError.message }, { status: 500 });
+    }
+    if (!donation) {
+      return NextResponse.json({ error: `Donation not found for id ${donationId}` }, { status: 404 });
+    }
+
+    const { data: beneficiaries, error: benError } = await supabaseAdmin
       .from('beneficiaries')
       .select('*');
     if (benError) throw benError;
 
-    const { data: relations, error: relError } = await supabase
+    const { data: relations, error: relError } = await supabaseAdmin
       .from('family_relationships')
       .select('*');
     if (relError) throw relError;
-
-    const { data: donation, error: donError } = await supabase
-      .from('donations')
-      .select('*')
-      .eq('id', donationId)
-      .single();
-    if (donError) throw donError;
 
     if (!beneficiaries || beneficiaries.length === 0) {
       return NextResponse.json({ error: 'No beneficiaries found' }, { status: 400 });
@@ -49,7 +56,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('donations')
       .select('id, name, quantity, unit, category')
       .order('received_at', { ascending: false });
